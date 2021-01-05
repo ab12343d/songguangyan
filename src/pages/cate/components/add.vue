@@ -23,7 +23,7 @@
             :show-file-list="false"
             :on-change="changeImg"
           >
-            <img v-if="imageUrl"  :src="imageUrl" class="avatar" />
+            <img v-if="imageUrl" :src="imageUrl" class="avatar" />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
@@ -48,7 +48,7 @@
 
 <script>
 import { resCateadd, resCateinfo, resCateedit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info", "cate"],
   data() {
@@ -64,15 +64,33 @@ export default {
   },
 
   methods: {
+    checkProps() {
+      return new Promise((resolve, reject) => {
+        if (this.user.catename == "") {
+          erroralert("分类名称不能为空");
+          return;
+        }
+        if (this.user.pid !== 0) {
+          if (!this.user.img) {
+            {
+              erroralert("请上传图片");
+              return;
+            }
+          }
+        }
+
+        resolve();
+      });
+    },
     // 清空user
     empty() {
-      this.imageUrl = "",
-        this.user = {
+      (this.imageUrl = ""),
+        (this.user = {
           pid: "",
           catename: "",
           img: null,
           status: 1
-        };
+        });
     },
     handleAvatarSuccess(file) {
       this.imageUrl = URL.createObjectURL(file.raw);
@@ -91,13 +109,15 @@ export default {
     },
     // 点击添加按钮
     add() {
-      resCateadd(this.user).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          this.empty();
-          this.$emit("init");
-        }
+      this.checkProps().then(() => {
+        resCateadd(this.user).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            this.empty();
+            this.$emit("init");
+          }
+        });
       });
     },
     cancel() {
@@ -124,15 +144,16 @@ export default {
         }
       });
     },
-    // 点击编辑按钮
+    // 点击修改按钮
     emits() {
-      resCateedit(this.user).then(res => {
-        console.log(res);
-        if (res.data.code == 200) {
-          this.info.isshow = false;
-          this.empty();
-          this.$emit("init");
-        }
+      this.checkProps().then(() => {
+        resCateedit(this.user).then(res => {
+          if (res.data.code == 200) {
+            this.info.isshow = false;
+            this.empty();
+            this.$emit("init");
+          }
+        });
       });
     }
   }

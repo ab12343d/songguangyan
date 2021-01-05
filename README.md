@@ -1,21 +1,25 @@
-# admin
+登录：ok
 
-> A Vue.js project
+菜单管理：ok
 
-## Build Setup
+角色管理：ok
 
-``` bash
-# install dependencies
-npm install
+管理员管理：ok
 
-# serve with hot reload at localhost:8080
-npm run dev
+产品分类：ok
 
-# build for production with minification
-npm run build
+产品规格：ok
 
-# build for production and view the bundle analyzer report
-npm run build --report
-```
+会员管理：ok
 
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
+轮播图管理：ok
+
+秒杀：ok
+
+商品管理：ok
+
+正则判断：ok
+
+登录权限：ok
+
+首页统计图：ok

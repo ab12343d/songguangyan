@@ -1,8 +1,13 @@
 <template>
   <div>
-    <el-dialog :title="info.iss?'商品添加':'商品修改'"  @closed="cancel" :visible.sync="info.isshow">
+   
+    <el-dialog
+      :title="info.iss?'商品添加':'商品修改'"
+      @closed="cancel"
+      @opened="opened"
+      :visible.sync="info.isshow"
+    >
       <el-form :model="user">
-        {{user}}
         <el-form-item label="一级分类">
           <el-select v-model="user.first_cateid" @change="xiugonw">
             <el-option label="--请选择--" value disabled></el-option>
@@ -57,7 +62,6 @@
             <el-option v-for="item in pecsListAll" :key="item" :value="item" :label="item"></el-option>
           </el-select>
         </el-form-item>
-
         <el-form-item label="是否新品" label-width="100px">
           <el-radio v-model="user.isnew" :label="1">是</el-radio>
           <el-radio v-model="user.isnew" :label="2">否</el-radio>
@@ -78,7 +82,8 @@
         </el-form-item>
 
         <el-form-item label="商品描述" label-width="100px">
-          <textarea name="textfield3" v-model="user.description" cols="30" rows="3"></textarea>
+          <!-- 富文本编辑器 -->
+          <div id="editor" v-if="info.isshow"></div>
         </el-form-item>
       </el-form>
 
@@ -100,7 +105,8 @@ import {
   reqGoodsinfo
 } from "../../../utils/http";
 import { mapGetters, mapActions } from "vuex";
-import { successalert } from "../../../utils/alert";
+import E from "wangeditor";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info"],
   data() {
@@ -141,8 +147,49 @@ export default {
     ...mapActions({
       reqList: "reqCodeAll",
       resSpecslist: "specs/reqList",
-        reqList1: "goods/reqGoods",
+      reqList1: "goods/reqGoods"
     }),
+    checkProps() {
+      return new Promise((resolve, reject) => {
+        if (this.user.first_cateid == "") {
+          erroralert("一级分类不能为空");
+          return;
+        }
+        if (this.user.second_cateid == "") {
+          erroralert("二级分类不能为空");
+          return;
+        }
+        if (this.user.goodsname == "") {
+          erroralert("商品名称不能为空");
+          return;
+        }
+        if (this.user.price == "") {
+          erroralert("价格不能为空");
+          return;
+        }
+        if (this.user.market_price == "") {
+          erroralert("市场价格不能为空");
+          return;
+        }
+        if (!this.user.img) {
+          erroralert("请上传图片");
+          return;
+        }
+        if (this.user.specsid == "") {
+          erroralert("商品规格不能为空");
+          return;
+        }
+        if (this.user.specsattr.length == 0) {
+          erroralert("规格属性不能为空");
+          return;
+        }
+        if (this.user.description == "") {
+          erroralert("商品描述不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
     // 清空
     empty() {
       this.imgUrl = "";
@@ -170,25 +217,28 @@ export default {
     },
     // 点击添加按钮
     add() {
-      //取出富文本编辑器的内容，赋值给user
-      // this.user.description = this.editor.txt.html();
-      // 由于后端要的specsattr是数组字符串，前端需要是数组，所以要拷贝、处理一下，再发送；
-      // 但是由于有对象（img）,所以不能使用JSON.parse(JSON.stringify())拷贝，需要使用...
+      this.user.description = this.editor.txt.html();
+      this.checkProps().then(() => {
+        //取出富文本编辑器的内容，赋值给user
 
-      let data = {
-        ...this.user,
-        specsattr: JSON.stringify(this.user.specsattr)
-      };
-      resGoodsadd(data).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          //弹框消失
-          this.cancel();
-           // 清空
-          this.empty()
-          // 刷新列表
-          this.reqList1()
-        }
+        // 由于后端要的specsattr是数组字符串，前端需要是数组，所以要拷贝、处理一下，再发送；
+        // 但是由于有对象（img）,所以不能使用JSON.parse(JSON.stringify())拷贝，需要使用...
+
+        let data = {
+          ...this.user,
+          specsattr: JSON.stringify(this.user.specsattr)
+        };
+        resGoodsadd(data).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            //弹框消失
+            this.cancel();
+            // 清空
+            this.empty();
+            // 刷新列表
+            this.reqList1();
+          }
+        });
       });
     },
     One(id) {
@@ -201,26 +251,41 @@ export default {
           this.imgUrl = this.$pre + this.user.img;
           // 重新获取规格
           this.user.specsattr = JSON.parse(this.user.specsattr);
-          this.user.id =id
+          this.user.id = id;
+          //将user.desctiption赋值给富文本编辑器
+          if (this.editor) {
+            this.editor.txt.html(this.user.description);
+          }
         }
       });
     },
     // 取消
-    cancel(){
-      if(!this.info.iss){
-        this.empty()
+    cancel() {
+      if (!this.info.iss) {
+        this.empty();
       }
-      this.info.isshow=false
+      this.info.isshow = false;
     },
     // 点击修改
     emit() {
-     let data={
-       ...this.user,
-       spe
-     }
-      reqGoodsedit(this.user).then(res => {
-
-        console.log(res);
+      //取出富文本编辑器的内容，赋值给user
+      this.user.description = this.editor.txt.html();
+      this.checkProps().then(() => {
+        let data = {
+          ...this.user,
+          specsattr: JSON.stringify(this.user.specsattr)
+        };
+        reqGoodsedit(data).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            // 清空
+            this.empty();
+            // 刷新列表
+            this.reqList1();
+            //弹框消失
+            this.cancel();
+          }
+        });
       });
     },
     // 触发一级chage事件修改二级是事件id
@@ -267,8 +332,15 @@ export default {
       this.imgUrl = URL.createObjectURL(file);
       //赋值给user.img
       this.user.img = file;
+    },
+    opened() {
+      this.editor = new E("#editor");
+      this.editor.create();
+      //赋值
+      this.editor.txt.html(this.user.description);
     }
   },
+
   mounted() {
     // 获取商品分类
     // 如果没有请过分类数据，就发一下请求

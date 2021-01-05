@@ -36,14 +36,13 @@
         <el-button type="primary" @click="add" v-if="info.iss">添 加</el-button>
         <el-button type="primary" @click="emtis" v-else>修 改</el-button>
       </div>
-      {{form}}
     </el-dialog>
   </div>
 </template>
 
 <script>
 import { resSpecsinfo, resSpecsedit, resSpecsadd } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info"],
   data() {
@@ -57,6 +56,19 @@ export default {
     };
   },
   methods: {
+    checkProps() {
+      return new Promise(resolve => {
+        if (this.form.specsname === "") {
+          erroralert("规格名称不能为空");
+          return;
+        }
+        if (this.form.attrs.some(item => item == "")) {
+          erroralert("规格不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
     // 点击添加规格
     tigu() {
       this.form.attrs.push("");
@@ -69,15 +81,18 @@ export default {
     add() {
       let obj = JSON.parse(JSON.stringify(this.form));
       obj.attrs = JSON.stringify(obj.attrs);
-      resSpecsadd(obj).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          this.$emit("paging");
-          this.empty()
-             // 更新总页数
-          this.$emit("init");
-        }
+
+      this.checkProps().then(() => {
+        resSpecsadd(obj).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            this.$emit("paging");
+            this.empty();
+            // 更新总页数
+            this.$emit("init");
+          }
+        });
       });
     },
     // 清空user内容
@@ -90,26 +105,29 @@ export default {
     },
     //  管理员获取（一条）
     getOne(id) {
-      resSpecsinfo({id:id}).then(res => {
+      resSpecsinfo({ id: id }).then(res => {
         if (res.data.code == 200) {
           this.form = res.data.list[0];
-          console.log( this.form)
-          this.form.attrs=JSON.parse(this.form.attrs)
-          this.form.id=id
+          console.log(this.form);
+          this.form.attrs = JSON.parse(this.form.attrs);
+          this.form.id = id;
         }
       });
     },
     // 点击修改按钮修改数据
     emtis() {
-      this.form.attrs=JSON.stringify(this.form.attrs)
-      resSpecsedit(this.form).then(res => {
-        // console.log(res)
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          this.$emit("paging");
-         this.empty()
-        }
+      this.checkProps().then(() => {
+        let obj = JSON.parse(JSON.stringify(this.form));
+        obj.attrs = JSON.stringify(obj.attrs);
+        resSpecsedit(this.form).then(res => {
+          console.log(res);
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            this.$emit("paging");
+            this.empty();
+          }
+        });
       });
     }
   },

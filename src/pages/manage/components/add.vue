@@ -1,6 +1,6 @@
 <template>
   <div>
-       <el-dialog :title="info.iss?'角色添加':'角色修改'" @closed="cancel" :visible.sync="info.isshow">
+    <el-dialog :title="info.iss?'角色添加':'角色修改'" @closed="cancel" :visible.sync="info.isshow">
       <el-form :model="form">
         <el-form-item label="所属角色">
           <el-select v-model="form.roleid">
@@ -21,7 +21,12 @@
         </el-form-item>
 
         <el-form-item label="状态" label-width="100px">
-          <el-switch  active-color="#13ce66" v-model="form.status" :active-value="1" :inactive-value="2"></el-switch>
+          <el-switch
+            active-color="#13ce66"
+            v-model="form.status"
+            :active-value="1"
+            :inactive-value="2"
+          ></el-switch>
         </el-form-item>
       </el-form>
 
@@ -35,7 +40,7 @@
 
 <script>
 import { reqUseradd, reqUserinfo, reqUseredit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info", "listr"],
   data() {
@@ -50,36 +55,55 @@ export default {
     };
   },
   methods: {
-     // 清空user内容
+    checkProps() {
+      return new Promise((resolve, reject) => {
+        if (this.form.roleid == "") {
+          erroralert("所属角色不能为空");
+          return;
+        }
+        if (this.form.username == "") {
+          erroralert("用户名不能为空");
+          return;
+        }
+        if (this.form.password == "") {
+          erroralert("密码不能为空");
+          return;
+        }
+        resolve()
+      });
+    },
+    // 清空user内容
     empty() {
-       this.form={
+      this.form = {
         roleid: "",
         username: "",
         password: "",
         status: ""
-      }
+      };
     },
-     // 关闭弹框 点击取消
-    cancel() { 
+    // 关闭弹框 点击取消
+    cancel() {
       // 当前是添加的时候清空表单里的数据
-      if(!this.info.iss){
-        this.empty()
+      if (!this.info.iss) {
+        this.empty();
       }
-        this.info.isshow = false;
+      this.info.isshow = false;
     },
     // 点击添加按钮
     add() {
-      reqUseradd(this.form).then(res => {
-        if (res.data.code == 200) {
-          this.info.isshow = false;
-          successalert(res.data.msg);
-          // 更新页面信息
-          this.$emit("paging");
-          // 清空数据
-           this.empty()
-          // 添加完成更新总页数
-           this.$emit('init')
-        }
+      this.checkProps().then(() => {
+        reqUseradd(this.form).then(res => {
+          if (res.data.code == 200) {
+            this.info.isshow = false;
+            successalert(res.data.msg);
+            // 更新页面信息
+            this.$emit("paging");
+            // 清空数据
+            this.empty();
+            // 添加完成更新总页数
+            this.$emit("init");
+          }
+        });
       });
     },
     //  管理员获取（一条）
@@ -95,8 +119,8 @@ export default {
       reqUseredit(this.form).then(res => {
         if (res.data.code == 200) {
           successalert(res.data.msg);
-          this.info.isshow=false;
-          this.$emit('paging')
+          this.info.isshow = false;
+          this.$emit("paging");
         }
       });
     }

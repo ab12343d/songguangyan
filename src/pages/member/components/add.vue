@@ -39,7 +39,7 @@
 
 <script>
 import { resMemberinfo, resMemberdit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info", "listr"],
   data() {
@@ -54,9 +54,26 @@ export default {
     };
   },
   methods: {
+    checkProps() {
+      return new Promise((resslve, resject) => {
+        if (this.form.nickname == "") {
+          erroralert("手机号不能为空");
+          return;
+        }
+        if (this.form.phone == "") {
+          erroralert("用户名不能为空");
+          return;
+        }
+        if (this.form.password == "") {
+          erroralert("密码不能为空");
+          return;
+        }
+        resslve();
+      });
+    },
     // 清空user内容
     empty() {
-      this.form= {
+      this.form = {
         nickname: "",
         phone: "",
         password: "",
@@ -67,19 +84,21 @@ export default {
     getOne(uid) {
       resMemberinfo({ uid }).then(res => {
         if (res.data.code == 200) {
-            console.log(res)
+          console.log(res);
           this.form = res.data.list;
         }
       });
     },
     // 点击修改按钮修改数据
-    emtis() {
-      resMemberdit(this.form).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          this.$emit("init");
-        }
+    emtis() { 
+      this.checkProps().then(() => {
+        resMemberdit(this.form).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            this.$emit("init");
+          }
+        });
       });
     }
   }

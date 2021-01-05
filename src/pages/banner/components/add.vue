@@ -3,8 +3,6 @@
     <!-- closed	Dialog 关闭动画结束时的回调 -->
     <el-dialog :title="!info.iss?'菜单添加':'菜单修改'" :visible.sync="info.isshow" @closed="cancel">
       <el-form :model="user">
-   
-
         <el-form-item label="分类名称" label-width="100px">
           <el-input v-model="user.title" autocomplete="off"></el-input>
         </el-form-item>
@@ -16,7 +14,7 @@
             :show-file-list="false"
             :on-change="changeImg"
           >
-            <img v-if="imageUrl"  :src="imageUrl" class="avatar" />
+            <img v-if="imageUrl" :src="imageUrl" class="avatar" />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
         </el-form-item>
@@ -40,14 +38,18 @@
 </template>
 
 <script>
-import { resBanneradd, resBannerinfo, resBannerrdit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import {
+  resBanneradd,
+  resBannerinfo,
+  resBannerrdit
+} from "../../../utils/http";
+import { successalert, erroralert } from "../../../utils/alert";
 export default {
   props: ["info", "blist"],
   data() {
     return {
       user: {
-        title:"",
+        title: "",
         img: null,
         status: 1
       },
@@ -55,14 +57,28 @@ export default {
     };
   },
   methods: {
+    // 封装验证
+    checkProps() {
+      return new Promise((resolve, rehect) => {
+        if (this.user.title == "") {
+          erroralert("名称不能为空");
+          return;
+        }
+        if (!this.user.img) {
+          erroralert("请上传图片");
+          return;
+        }
+        resolve();
+      });
+    },
     // 清空user
     empty() {
-      this.imageUrl = "",
-        this.user = {
-         title:"",
+      (this.imageUrl = ""),
+        (this.user = {
+          title: "",
           img: null,
           status: 1
-        };
+        });
     },
     handleAvatarSuccess(file) {
       this.imageUrl = URL.createObjectURL(file.raw);
@@ -81,13 +97,15 @@ export default {
     },
     // 点击添加按钮
     add() {
-      resBanneradd(this.user).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          this.empty();
-          this.$emit("init");
-        }
+      this.checkProps().then(() => {
+        resBanneradd(this.user).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            this.empty();
+            this.$emit("init");
+          }
+        });
       });
     },
     cancel() {
@@ -116,13 +134,15 @@ export default {
     },
     // 点击编辑按钮
     emits() {
-      resBannerrdit(this.user).then(res => {
-        console.log(res);
-        if (res.data.code == 200) {
-          this.info.isshow = false;
-          this.empty();
-          this.$emit("init");
-        }
+      this.checkProps().then(() => {
+        resBannerrdit(this.user).then(res => {
+          console.log(res);
+          if (res.data.code == 200) {
+            this.info.isshow = false;
+            this.empty();
+            this.$emit("init");
+          }
+        });
       });
     }
   }

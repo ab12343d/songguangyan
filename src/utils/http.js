@@ -1,6 +1,8 @@
 import axios from 'axios'
 import qs from 'qs'
 import Vue from 'vue'
+import store from '../store'
+import router from '../router'
 import {
   erroralert
 } from './alert'
@@ -12,6 +14,14 @@ Vue.prototype.$pre = 'http://localhost:3000'
 // let baseUrl = ''
 // Vue.prototype.$pre=''
 
+//请求拦截:设置请求头
+axios.interceptors.request.use(config=>{
+  if(config.url!==baseUrl+"/api/userlogin"){
+      config.headers.authorization=store.state.userInfo.token
+  }
+  return config
+})
+
 // 响应拦截
 axios.interceptors.response.use(res => {
   // console.group('本次请求地址是:'+res.config.url)
@@ -22,6 +32,13 @@ axios.interceptors.response.use(res => {
   }
   if (!res.data.list) {
     res.data.list = []
+  }
+  // 掉线处理
+  if(res.data.msg=='登录已过期或访问权限受限'){
+    // 清除用户登录的信息，userInfo
+    store.dispatch('changeUser',{})
+    // 跳到登录页
+     router.push('/login')
   }
   return res
 })
@@ -372,5 +389,44 @@ export const reqGoodsinfo=(id)=>{
     url:baseUrl+'/api/goodsinfo',
     method:'get',
     params:id
+  })
+}
+// 限时秒杀添加
+export const reqSeckadd=(user)=>{
+  return axios({
+    url:baseUrl+'/api/seckadd',
+    method:'post',
+    data:qs.stringify(user)
+  })
+}
+// 获取限时秒杀列表
+export const reqSecklist=()=>{
+  return axios({
+    url:baseUrl+'/api/secklist',
+    method:'get'
+  })
+}
+// 限时秒杀删除
+export const reqSeckdelete=(id)=>{
+  return axios({
+    url:baseUrl+'/api/seckdelete',
+    method:'post',
+    data:qs.stringify(id)
+  })
+}
+// 获取消失秒杀（一条）
+export const reqSeckinfo=(id)=>{
+  return axios({
+    url:baseUrl+'/api/seckinfo',
+    method:'get',
+    params:id
+  })
+}
+// 限时秒杀修改
+export const reqSeckedit=(user)=>{
+  return axios({
+    url:baseUrl+'/api/seckedit',
+    method:'post',
+     data:qs.stringify(user)
   })
 }

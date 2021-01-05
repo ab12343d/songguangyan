@@ -29,5 +29,10 @@ export let actions = {
         context.commit('changCate', res.data.list)
       }
     })
+  },
+  
+  changeUser(context,obj){
+    context.commit('changUserInfo',obj)
   }
 }
+

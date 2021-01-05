@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog title="角色添加" :visible.sync="info.isshow" @closed="empty">
+    <el-dialog :title="info.iss?'角色添加':'角色编辑'" :visible.sync="info.isshow" @closed="empty">
       <el-form :model="form">
         <el-form-item label="角色名称">
           <el-input v-model="form.rolename" autocomplete="off"></el-input>
@@ -47,14 +47,15 @@
 
 <script>
 import { reqRoleadd, reqRoleinfo, reqRoleedit } from "../../../utils/http";
-import { successalert } from "../../../utils/alert";
+import { successalert, erroralert } from "../../../utils/alert";
+import { mapActions, mapGetters } from "vuex";
 export default {
   props: ["info", "list"],
   data() {
     return {
       form: {
         rolename: "",
-        menus: [],
+        menus: "",
         status: 1
       },
       menuss: [], //创建接受新复选框点击的key
@@ -64,31 +65,50 @@ export default {
       }
     };
   },
+  computed: {
+    ...mapGetters({
+      userInfo: "userInfo"
+    })
+  },
   methods: {
+    ...mapActions({
+      changeUser: "changeUser"
+    }),
     // 清空数据方法
     empty() {
       this.form = {
         rolename: "",
-        menus: [],
+        menus: "",
         menuss: [],
         status: 1
       };
       // 清空多选框样式
       this.$refs.tree.setCheckedKeys([]);
     },
+    checkProps() {
+      return new Promise((resolve, reject) => {
+        if (this.from.rolename == "") {
+          erroralert("角色名称不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
     // 点击添加按钮
     add() {
-      reqRoleadd(this.form).then(res => {
-        if (res.data.code == 200) {
-          successalert(res.data.msg);
-          // 关闭弹框
-          successalert(res.data.msg);
-          this.info.isshow = false;
-          // 重新获取数据
-          this.$emit("inits");
-          // 清空数据
-          this.empty();
-        }
+      this.checkProps().then(() => {
+        reqRoleadd(this.form).then(res => {
+          if (res.data.code == 200) {
+            successalert(res.data.msg);
+            // 关闭弹框
+            successalert(res.data.msg);
+            this.info.isshow = false;
+            // 重新获取数据
+            this.$emit("inits");
+            // 清空数据
+            this.empty();
+          }
+        });
       });
     },
     // 点击多选框
@@ -108,9 +128,18 @@ export default {
     },
     // 点击修改按钮
     emitt() {
+      //先取出树形控件的数据给menus，再发请求
+      this.form.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
+      // 先取出属性空间的数据给menus，在发送请求
       reqRoleedit(this.form).then(res => {
         if (res.data.code == 200) {
           successalert(res.data.msg);
+          //如果修改的角色，是当前用户所属的角色，就需要退出登录，重新登录
+          if (this.form.id == this.userInfo.roleid) {
+            this.changeUser({});
+            this.$router.push("/login");
+            return;
+          }
           // 弹框消失
           this.info.isshow = false;
           // 更新数据

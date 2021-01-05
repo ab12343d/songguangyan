@@ -5,7 +5,11 @@ export let state={
     // 角色列表初始化
     listr:[],
     // 商品分类初始化
-    cate:[]
+    cate:[],
+    // 在仓库中存数据，会方便组件的取值，但是刷新就没了；本地存储刷新数据还会在。所以准备同步本地存储和状态层
+    userInfo:sessionStorage.getItem('userInfo')?
+    JSON.parse(sessionStorage.getItem('userInfo')):{}
+
 }
 export let mutations = {
     // 更换列表
@@ -19,6 +23,16 @@ export let mutations = {
     // 更新获取商品分类列表
     changCate(state,arr){
         state.cate=arr
+    },
+    // 存储数据
+    changUserInfo(state,obj){
+        state.userInfo=obj;
+        // 同步到本地储存
+        if(obj.username){
+            sessionStorage.setItem('userInfo',JSON.stringify(obj))
+        }else{
+            sessionStorage.removeItem('userInfo')
+        }
     }
 }
 export let getters={
@@ -33,5 +47,8 @@ export let getters={
     //  导出商品列表
     cate(state){
         return state.cate
+    },
+    userInfo(state){
+        return state.userInfo
     }
 }
